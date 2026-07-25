@@ -1,17 +1,17 @@
 package pl.olafcio.tedge.jargen;
 
 import org.jspecify.annotations.NullMarked;
-import pl.olafcio.tedge.jargen.classtransformer.ClassTransformer;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Opcodes;
+import pl.olafcio.tedge.jargen.transformers.ClassPublicizer;
 
 import java.io.*;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.NoSuchElementException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
-
-import static java.lang.classfile.ClassFile.*;
 
 @NullMarked
 public class Transformer {
@@ -62,138 +62,15 @@ public class Transformer {
         try                   { bytes = stream.readAllBytes();                                                  }
         catch (IOException e) { throw new RuntimeException("Failed to read .jar class: " + entry.getName(), e); }
 
-        var reader = new ClassTransformer(bytes);
+        var reader = new ClassReader(bytes);
+        var writer = new ClassWriter(reader, 0);
 
-        reader.expect("CA FE BA BE");
-        reader.expect("00 00 00");
+        ClassVisitor visitor = writer;
 
-        // Major Version
-        int major = reader.consume();
-        if (major > 69)
-            throw new RuntimeException("Unsupported class file major version '" + major + "'");
+        visitor = new ClassPublicizer(Opcodes.ASM9, visitor);
 
-        // Minor Version
-        int minor = reader.consume();
-        if (major == 69 && minor != 0)
-            throw new RuntimeException("Unsupported class file minor version '" + minor + "'");
-
-        String Type;
-        boolean isLate = false;
-
-        reader.consume(); // wat is dis?
-
-        var typeMod = reader.consume();
-
-        if ((typeMod & 0x0A) == 0x0A) {
-            // Class
-            Type = "class";
-        } else if ((typeMod & 0x07) == 0x07) {
-            // Interface
-
-            // TODO Enum is getting flagged as an interface (it is late)
-
-            Type = "interface";
-            isLate = true;
-        } else {
-            System.out.println(typeMod + " at " + entry.getName());
-            throw new RuntimeException("Unknown class object type");
-        }
-
-        Type = Type.trim();
-
-        // class     => 0A | 00 02 00 03 07
-        // interface => 07 | 00 02 01 00 + length
-
-        String Name;
-        String Extends;
-
-        if (!isLate) {
-            reader.consume(); // not sure either; probably 2-byte integer?
-            reader.consume(); // super class (constant index)
-            reader.consume(); // not sure either; probably 2-byte integer?
-            reader.consume(); // this class (constant index)
-
-            if (reader.now("07 00 04 0C 00 05 00 06 01 00")) {
-                Extends = reader.parseText();
-
-                if (Extends.equals("java/lang/Record")) {
-                    Type = "record";
-
-                    while (!reader.now("07 00 14 01 00"))
-                        reader.consume();
-                } else {
-                    // Type = "class";
-
-                                         // �Code�
-                    while (!reader.now("01 00 04 43 6F 64 65"))
-                        reader.consume();
-
-                    reader.back(10);
-
-                    while (!reader.now("07 00"))
-                        reader.back(1);
-
-                    reader.consume();
-                    reader.consume();
-                    reader.consume();
-                }
-
-                // System.out.println("Class/record '" + entry.getName() + "' extends '" + Extends + "'");
-            } else {
-                throw new RuntimeException("Invalid class/record '" + entry.getName() + "'");
-            }
-
-            Name = reader.parseText();
-        } else {
-            reader.consume(); // not sure either; probably 2-byte integer?
-            reader.consume(); // super class (constant index)
-            reader.consume(); // not sure
-            reader.consume(); // not sure
-
-            Name = reader.parseText();
-
-            if (reader.now("07 00 04 01 00")) {
-                Extends = reader.parseText();
-
-                // Type = "[@]interface";
-
-                // System.out.println("[@]Interface '" + entry.getName() + "' is '" + Name + "' which extends '" + Extends + "'");
-            } else {
-                // Type = "enum";
-
-                // System.out.println("   Enum      '" + entry.getName() + "' is '" + Name + "'");
-            }
-        }
-
-                             // �SourceFile�
-        while (!reader.now("01 00 0A 53 6F 75 72 63 65 46 69 6C 65 01 00"))
-            reader.consume();
-
-        var sourceFile = reader.parseText();
-
-        var mod2 = reader.consume();
-        var mod = reader.consume();
-
-//        System.out.println(sourceFile + " + " + mod);
-
-        if ((mod & ACC_PROTECTED) == ACC_PROTECTED) {
-            mod |= ACC_PROTECTED;
-            mod |= ACC_PUBLIC;
-
-            System.out.println("[+] protected %s %s".formatted(Type, Name));
-        } else if ((mod & ACC_PRIVATE) == ACC_PRIVATE) {
-            mod |= ACC_PRIVATE;
-            mod |= ACC_PUBLIC;
-
-            System.out.println("[+] private %s %s".formatted(Type, Name));
-        } else if ((mod & ACC_PUBLIC) != ACC_PUBLIC) {
-            mod |= ACC_PUBLIC;
-
-            System.out.println("[+] %s %s".formatted(Type, Name));
-        }
-
-        reader.back(2);
-        reader.buf(2).putShort(mod);
+        reader.accept(visitor, 0);
+        bytes = writer.toByteArray();
 
         try                   { write(entry, bytes);                                                           }
         catch (IOException e) { throw new RuntimeException("Failed to copy transformed class inside .jar", e); }
