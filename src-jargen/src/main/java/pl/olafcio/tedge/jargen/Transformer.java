@@ -77,46 +77,47 @@ public class Transformer {
         if (major == 69 && minor != 0)
             throw new RuntimeException("Unsupported class file minor version '" + minor + "'");
 
-        String Def = "";
+        String Type;
+        boolean isLate = false;
+
+        reader.consume(); // wat is dis?
 
         var typeMod = reader.consume();
 
-        if ((typeMod & 0x32) == 0x32) {
-            // Final
-            Def += " record";
-        } else if ((typeMod & 0x10) == 0x10) {
+        if ((typeMod & 0x0A) == 0x0A) {
             // Class
-            Def += " class";
-        } else if ((typeMod & 0x09) == 0x09) {
-            // Annotation
-            Def += " @interface";
-        } else if ((typeMod & 0x2A) == 0x2A) {
-            // Enum
-            Def += " enum";
+            Type = "class";
         } else if ((typeMod & 0x07) == 0x07) {
             // Interface
-            Def += " interface";
+
+            // TODO Enum is getting flagged as an interface (it is late)
+
+            Type = "interface";
+            isLate = true;
         } else {
+            System.out.println(typeMod + " at " + entry.getName());
             throw new RuntimeException("Unknown class object type");
         }
 
-        Def = Def.trim();
+        Type = Type.trim();
 
         // class     => 0A | 00 02 00 03 07
         // interface => 07 | 00 02 01 00 + length
 
-        String Name = "?";
+        String Name;
+        String Extends;
 
-        if (reader.now("0A")) {
+        if (!isLate) {
             reader.consume(); // not sure either; probably 2-byte integer?
             reader.consume(); // super class (constant index)
             reader.consume(); // not sure either; probably 2-byte integer?
             reader.consume(); // this class (constant index)
 
             if (reader.now("07 00 04 0C 00 05 00 06 01 00")) {
-                var Extends = reader.parseText();
+                Extends = reader.parseText();
+
                 if (Extends.equals("java/lang/Record")) {
-                    // Type = "record";
+                    Type = "record";
 
                     while (!reader.now("07 00 14 01 00"))
                         reader.consume();
@@ -132,15 +133,17 @@ public class Transformer {
                 throw new RuntimeException("Invalid class/record '" + entry.getName() + "'");
             }
 
-
             Name = reader.parseText();
         } else {
-            reader.expect("07 00 02 01 00");
+            reader.consume(); // not sure either; probably 2-byte integer?
+            reader.consume(); // super class (constant index)
+            reader.consume(); // not sure
+            reader.consume(); // not sure
 
             Name = reader.parseText();
 
             if (reader.now("07 00 04 01 00")) {
-                var Extends = reader.parseText();
+                Extends = reader.parseText();
 
                 // Type = "[@]interface";
 
@@ -158,27 +161,25 @@ public class Transformer {
 
         var sourceFile = reader.parseText();
 
-        var bb = ByteBuffer.allocateDirect(2);
-        bb.order(ByteOrder.BIG_ENDIAN);
-        bb.put(reader.consume());
-        bb.put(reader.consume());
-        bb.flip();
-        var mod = bb.getShort();
+        var mod2 = reader.consume();
+        var mod = reader.consume();
+
+//        System.out.println(sourceFile + " + " + mod);
 
         if ((mod & ACC_PROTECTED) == ACC_PROTECTED) {
             mod |= ACC_PROTECTED;
             mod |= ACC_PUBLIC;
 
-            System.out.println("[+] protected %s %s".formatted(Def, Name));
+            System.out.println("[+] protected %s %s".formatted(Type, Name));
         } else if ((mod & ACC_PRIVATE) == ACC_PRIVATE) {
             mod |= ACC_PRIVATE;
             mod |= ACC_PUBLIC;
 
-            System.out.println("[+] private %s %s".formatted(Def, Name));
+            System.out.println("[+] private %s %s".formatted(Type, Name));
         } else if ((mod & ACC_PUBLIC) != ACC_PUBLIC) {
             mod |= ACC_PUBLIC;
 
-            System.out.println("[+] %s %s".formatted(Def, Name));
+            System.out.println("[+] %s %s".formatted(Type, Name));
         }
 
         reader.back(2);
