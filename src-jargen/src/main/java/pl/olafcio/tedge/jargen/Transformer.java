@@ -77,25 +77,35 @@ public class Transformer {
         if (major == 69 && minor != 0)
             throw new RuntimeException("Unsupported class file minor version '" + minor + "'");
 
-        if (reader.now("10")) {
+        String Def = "";
+
+        var typeMod = reader.consume();
+
+        if ((typeMod & 0x32) == 0x32) {
+            // Final
+            Def += " record";
+        } else if ((typeMod & 0x10) == 0x10) {
             // Class
-        } else if (reader.now("09")) {
+            Def += " class";
+        } else if ((typeMod & 0x09) == 0x09) {
             // Annotation
-        } else if (reader.now("2A")) {
+            Def += " @interface";
+        } else if ((typeMod & 0x2A) == 0x2A) {
             // Enum
-        } else if (reader.now("07")) {
+            Def += " enum";
+        } else if ((typeMod & 0x07) == 0x07) {
             // Interface
-        } else if (reader.now("32")) {
-            // Record
+            Def += " interface";
         } else {
             throw new RuntimeException("Unknown class object type");
         }
+
+        Def = Def.trim();
 
         // class     => 0A | 00 02 00 03 07
         // interface => 07 | 00 02 01 00 + length
 
         String Name = "?";
-        String Type;
 
         if (reader.now("0A")) {
             reader.consume(); // not sure either; probably 2-byte integer?
@@ -106,12 +116,12 @@ public class Transformer {
             if (reader.now("07 00 04 0C 00 05 00 06 01 00")) {
                 var Extends = reader.parseText();
                 if (Extends.equals("java/lang/Record")) {
-                    Type = "record";
+                    // Type = "record";
 
                     while (!reader.now("07 00 14 01 00"))
                         reader.consume();
                 } else {
-                    Type = "class";
+                    // Type = "class";
 
                     while (!reader.now("07 00 08 01 00"))
                         reader.consume();
@@ -132,11 +142,11 @@ public class Transformer {
             if (reader.now("07 00 04 01 00")) {
                 var Extends = reader.parseText();
 
-                Type = "[@]interface";
+                // Type = "[@]interface";
 
                 // System.out.println("[@]Interface '" + entry.getName() + "' is '" + Name + "' which extends '" + Extends + "'");
             } else {
-                Type = "enum";
+                // Type = "enum";
 
                 // System.out.println("   Enum      '" + entry.getName() + "' is '" + Name + "'");
             }
@@ -159,16 +169,16 @@ public class Transformer {
             mod |= ACC_PROTECTED;
             mod |= ACC_PUBLIC;
 
-            System.out.println("[+] protected %s %s".formatted(Type, Name));
+            System.out.println("[+] protected %s %s".formatted(Def, Name));
         } else if ((mod & ACC_PRIVATE) == ACC_PRIVATE) {
             mod |= ACC_PRIVATE;
             mod |= ACC_PUBLIC;
 
-            System.out.println("[+] private %s %s".formatted(Type, Name));
+            System.out.println("[+] private %s %s".formatted(Def, Name));
         } else if ((mod & ACC_PUBLIC) != ACC_PUBLIC) {
             mod |= ACC_PUBLIC;
 
-            System.out.println("[+] %s %s".formatted(Type, Name));
+            System.out.println("[+] %s %s".formatted(Def, Name));
         }
 
         reader.back(2);
