@@ -124,8 +124,18 @@ public class Transformer {
                 } else {
                     // Type = "class";
 
-                    while (!reader.now("07 00 08 01 00"))
+                                         // �Code�
+                    while (!reader.now("01 00 04 43 6F 64 65"))
                         reader.consume();
+
+                    reader.back(10);
+
+                    while (!reader.now("07 00"))
+                        reader.back(1);
+
+                    reader.consume();
+                    reader.consume();
+                    reader.consume();
                 }
 
                 // System.out.println("Class/record '" + entry.getName() + "' extends '" + Extends + "'");
