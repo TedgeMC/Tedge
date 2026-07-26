@@ -27,6 +27,10 @@ test {
 
 jar {
     manifest {
-        attributes("Main-Class": "pl.olafcio.tedge.Main")
+        attributes("Main-Class": "pl.olafcio.tedge.Main",
+                   "Premain-Class": 'pl.olafcio.tedge.Agent',
+                   "Can-Redefine-Classes": 'true',
+                   "Can-Retransform-Classes": 'true',
+                   "Can-Set-Native-Method-Prefix": 'true')
     }
 }
