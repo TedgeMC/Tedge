@@ -53,9 +53,4 @@ public class ClassPublicizer extends ClassVisitor {
 
         super.visit(version, access, name, signature, superName, interfaces);
     }
-
-    @Override
-    public void visitInnerClass(String name, String outerName, String innerName, int access) {
-        super.visitInnerClass(name, outerName, innerName, Opcodes.ACC_PUBLIC);
-    }
 }
