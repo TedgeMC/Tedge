@@ -3,6 +3,7 @@ package pl.olafcio.tedge.jargen;
 import org.jspecify.annotations.NullMarked;
 import org.objectweb.asm.*;
 import pl.olafcio.tedge.jargen.transformers.ClassPublicizer;
+import pl.olafcio.tedge.jargen.transformers.MethodPublicizer;
 
 import java.io.*;
 import java.util.HashMap;
@@ -66,6 +67,7 @@ public class Transformer {
         ClassVisitor visitor = writer;
 
         visitor = new ClassPublicizer(Opcodes.ASM9, visitor);
+        visitor = new MethodPublicizer(Opcodes.ASM9, visitor);
 
         transformClassFields(reader);
 
