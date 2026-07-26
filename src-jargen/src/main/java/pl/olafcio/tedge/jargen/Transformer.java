@@ -112,6 +112,8 @@ public class Transformer {
                             access -= Opcodes.ACC_PRIVATE;
                         else if ((access & Opcodes.ACC_PROTECTED) == Opcodes.ACC_PROTECTED)
                             access -= Opcodes.ACC_PROTECTED;
+                        else if ((access & Opcodes.ACC_PUBLIC) != Opcodes.ACC_PUBLIC)
+                            access |= Opcodes.ACC_PUBLIC;
                         else break print;
 
                         IO.println("[+] public  field      %s %s".formatted(typeName, name));
