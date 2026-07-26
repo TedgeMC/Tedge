@@ -29,13 +29,13 @@ public class MethodPublicizer extends ClassVisitor {
                     access |= Opcodes.ACC_PROTECTED;
                 else break print;
 
-                IO.println("[+] public method %s %s%s".formatted(typeName, name, signature));
+                IO.println("[+] public  method     %s %s%s".formatted(typeName, name, signature));
             }
 
             if ((access & Opcodes.ACC_FINAL) == Opcodes.ACC_FINAL) {
                 access |= Opcodes.ACC_FINAL;
 
-                IO.println("[+] mutable method %s %s%s".formatted(typeName, name, signature));
+                IO.println("[+] mutable method     %s %s%s".formatted(typeName, name, signature));
             }
         }
 

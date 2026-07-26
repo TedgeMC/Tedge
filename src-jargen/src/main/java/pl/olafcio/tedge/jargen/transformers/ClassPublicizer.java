@@ -20,12 +20,12 @@ public class ClassPublicizer extends ClassVisitor {
                 access |= Opcodes.ACC_PUBLIC;
             else break print;
 
-            IO.println("[+] public %s %s".formatted(
-                    (access & Opcodes.ACC_INTERFACE)  == Opcodes.ACC_INTERFACE  ? "interface"  :
-                    (access & Opcodes.ACC_ENUM)       == Opcodes.ACC_ENUM       ? "enum"       :
-                    (access & Opcodes.ACC_RECORD)     == Opcodes.ACC_RECORD     ? "record"     :
+            IO.println("[+] public  %s %s".formatted(
+                    (access & Opcodes.ACC_INTERFACE)  == Opcodes.ACC_INTERFACE  ? "interface " :
+                    (access & Opcodes.ACC_ENUM)       == Opcodes.ACC_ENUM       ? "enum      " :
+                    (access & Opcodes.ACC_RECORD)     == Opcodes.ACC_RECORD     ? "record    " :
                     (access & Opcodes.ACC_ANNOTATION) == Opcodes.ACC_ANNOTATION ? "@interface" :
-                                                                                  "class",
+                                                                                  "class     ",
                     name
             ));
         }
