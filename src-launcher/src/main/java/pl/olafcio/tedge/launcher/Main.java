@@ -29,7 +29,7 @@ public class Main {
     private static final Path LIBRARIES_PATH
                        = BASE_PATH.resolve("libraries");
 
-    static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException {
 //        var dry = args.length >= 1 && args[0].equals("--dry");
 //        if (dry) {
 //            var len = args.length - 1;
