@@ -2,6 +2,7 @@ package pl.olafcio.tedge.jargen.transformers;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;
+import pl.olafcio.tedge.jargen.Main;
 
 public class ClassPublicizer extends ClassVisitor {
     public ClassPublicizer(int api, ClassVisitor classVisitor) {
@@ -26,26 +27,28 @@ public class ClassPublicizer extends ClassVisitor {
         else ch--;
 
         if (ch > 0)
-            IO.println("[+] public  %s %s".formatted(
-                    record                                                      ? "-record   " :
-                    (access & Opcodes.ACC_INTERFACE)  == Opcodes.ACC_INTERFACE  ? "interface " :
-                    (access & Opcodes.ACC_ENUM)       == Opcodes.ACC_ENUM       ? "enum      " :
-                    (access & Opcodes.ACC_ANNOTATION) == Opcodes.ACC_ANNOTATION ? "@interface" :
-                                                                                  "class     ",
-                    name
-            ));
+            if (Main.verbose)
+                IO.println("[+] public  %s %s".formatted(
+                        record                                                      ? "-record   " :
+                        (access & Opcodes.ACC_INTERFACE)  == Opcodes.ACC_INTERFACE  ? "interface " :
+                        (access & Opcodes.ACC_ENUM)       == Opcodes.ACC_ENUM       ? "enum      " :
+                        (access & Opcodes.ACC_ANNOTATION) == Opcodes.ACC_ANNOTATION ? "@interface" :
+                                                                                      "class     ",
+                        name
+                ));
 
         if ((access & Opcodes.ACC_FINAL) == Opcodes.ACC_FINAL) {
             access -= Opcodes.ACC_FINAL;
 
-            IO.println("[+] mutable %s %s".formatted(
-                    record                                                      ? "-record   " :
-                    (access & Opcodes.ACC_INTERFACE)  == Opcodes.ACC_INTERFACE  ? "interface " :
-                    (access & Opcodes.ACC_ENUM)       == Opcodes.ACC_ENUM       ? "enum      " :
-                    (access & Opcodes.ACC_ANNOTATION) == Opcodes.ACC_ANNOTATION ? "@interface" :
-                                                                                  "class     ",
-                    name
-            ));
+            if (Main.verbose)
+                IO.println("[+] mutable %s %s".formatted(
+                        record                                                      ? "-record   " :
+                        (access & Opcodes.ACC_INTERFACE)  == Opcodes.ACC_INTERFACE  ? "interface " :
+                        (access & Opcodes.ACC_ENUM)       == Opcodes.ACC_ENUM       ? "enum      " :
+                        (access & Opcodes.ACC_ANNOTATION) == Opcodes.ACC_ANNOTATION ? "@interface" :
+                                                                                      "class     ",
+                        name
+                ));
         }
 
         super.visit(version, access, name, signature, superName, interfaces);

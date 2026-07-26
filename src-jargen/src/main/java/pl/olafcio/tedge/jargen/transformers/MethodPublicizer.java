@@ -3,6 +3,7 @@ package pl.olafcio.tedge.jargen.transformers;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import pl.olafcio.tedge.jargen.Main;
 
 import java.util.Objects;
 
@@ -33,13 +34,15 @@ public class MethodPublicizer extends ClassVisitor {
                     access |= Opcodes.ACC_PUBLIC;
                 else break print;
 
-                IO.println("[+] public  method     %s %s%s".formatted(typeName, name, Objects.requireNonNullElse(signature, "")));
+                if (Main.verbose)
+                    IO.println("[+] public  method     %s %s%s".formatted(typeName, name, Objects.requireNonNullElse(signature, "")));
             }
 
             if ((access & Opcodes.ACC_FINAL) == Opcodes.ACC_FINAL) {
                 access -= Opcodes.ACC_FINAL;
 
-                IO.println("[+] mutable method     %s %s%s".formatted(typeName, name, Objects.requireNonNullElse(signature, "")));
+                if (Main.verbose)
+                    IO.println("[+] mutable method     %s %s%s".formatted(typeName, name, Objects.requireNonNullElse(signature, "")));
             }
         }
 

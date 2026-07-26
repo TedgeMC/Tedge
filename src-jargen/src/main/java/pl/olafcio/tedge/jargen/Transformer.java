@@ -116,7 +116,8 @@ public class Transformer {
                             access |= Opcodes.ACC_PUBLIC;
                         else break print;
 
-                        IO.println("[+] public  field      %s %s".formatted(typeName, name));
+                        if (Main.verbose)
+                            IO.println("[+] public  field      %s %s".formatted(typeName, name));
                     }
                 }
 
@@ -124,7 +125,9 @@ public class Transformer {
                     // Remove final
                     if ((access & Opcodes.ACC_FINAL) == Opcodes.ACC_FINAL) {
                         access -= Opcodes.ACC_FINAL;
-                        IO.println("[+] mutable field      %s %s".formatted(typeName, name));
+
+                        if (Main.verbose)
+                            IO.println("[+] mutable field      %s %s".formatted(typeName, name));
                     }
                 }
 
