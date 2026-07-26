@@ -10,21 +10,25 @@ public class ClassPublicizer extends ClassVisitor {
 
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-        if ((access & Opcodes.ACC_PROTECTED) == Opcodes.ACC_PROTECTED)
-            access |= Opcodes.ACC_PROTECTED;
-        else if ((access & Opcodes.ACC_PRIVATE) == Opcodes.ACC_PRIVATE)
-            access |= Opcodes.ACC_PRIVATE;
+        print:
+        {
+            if ((access & Opcodes.ACC_PROTECTED) == Opcodes.ACC_PROTECTED)
+                access |= Opcodes.ACC_PROTECTED;
+            else if ((access & Opcodes.ACC_PRIVATE) == Opcodes.ACC_PRIVATE)
+                access |= Opcodes.ACC_PRIVATE;
+            else break print;
+
+            IO.println("[+] public %s %s".formatted(
+                    (access & Opcodes.ACC_INTERFACE)  == Opcodes.ACC_INTERFACE  ? "interface"  :
+                    (access & Opcodes.ACC_ENUM)       == Opcodes.ACC_ENUM       ? "enum"       :
+                    (access & Opcodes.ACC_RECORD)     == Opcodes.ACC_RECORD     ? "record"     :
+                    (access & Opcodes.ACC_ANNOTATION) == Opcodes.ACC_ANNOTATION ? "@interface" :
+                                                                                  "class",
+                    name
+            ));
+        }
 
         super.visit(version, access, name, signature, superName, interfaces);
-
-        IO.println("[+] public %s %s".formatted(
-                (access & Opcodes.ACC_INTERFACE)  == Opcodes.ACC_INTERFACE  ? "interface"  :
-                (access & Opcodes.ACC_ENUM)       == Opcodes.ACC_ENUM       ? "enum"       :
-                (access & Opcodes.ACC_RECORD)     == Opcodes.ACC_RECORD     ? "record"     :
-                (access & Opcodes.ACC_ANNOTATION) == Opcodes.ACC_ANNOTATION ? "@interface" :
-                                                                              "class",
-                name
-        ));
     }
 
     @Override
