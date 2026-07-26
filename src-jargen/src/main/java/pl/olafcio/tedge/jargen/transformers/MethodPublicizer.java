@@ -4,6 +4,8 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+import java.util.Objects;
+
 public class MethodPublicizer extends ClassVisitor {
     public MethodPublicizer(int api, ClassVisitor classVisitor) {
         super(api, classVisitor);
@@ -19,7 +21,7 @@ public class MethodPublicizer extends ClassVisitor {
 
     @Override
     public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-        if (signature != null) {
+        if (!name.equals("<clinit>")) {
             print:
             {
                 // Set as public
@@ -27,15 +29,17 @@ public class MethodPublicizer extends ClassVisitor {
                     access |= Opcodes.ACC_PRIVATE;
                 else if ((access & Opcodes.ACC_PROTECTED) == Opcodes.ACC_PROTECTED)
                     access |= Opcodes.ACC_PROTECTED;
+                else if ((access & Opcodes.ACC_PUBLIC) != Opcodes.ACC_PUBLIC)
+                    access |= Opcodes.ACC_PUBLIC;
                 else break print;
 
-                IO.println("[+] public  method     %s %s%s".formatted(typeName, name, signature));
+                IO.println("[+] public  method     %s %s%s".formatted(typeName, name, Objects.requireNonNullElse(signature, "")));
             }
 
             if ((access & Opcodes.ACC_FINAL) == Opcodes.ACC_FINAL) {
                 access |= Opcodes.ACC_FINAL;
 
-                IO.println("[+] mutable method     %s %s%s".formatted(typeName, name, signature));
+                IO.println("[+] mutable method     %s %s%s".formatted(typeName, name, Objects.requireNonNullElse(signature, "")));
             }
         }
 
