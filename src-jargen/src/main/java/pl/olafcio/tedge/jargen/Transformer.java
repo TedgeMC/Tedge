@@ -109,9 +109,9 @@ public class Transformer {
                     print: {
                         // Set as public
                         if ((access & Opcodes.ACC_PRIVATE) == Opcodes.ACC_PRIVATE)
-                            access |= Opcodes.ACC_PRIVATE;
+                            access -= Opcodes.ACC_PRIVATE;
                         else if ((access & Opcodes.ACC_PROTECTED) == Opcodes.ACC_PROTECTED)
-                            access |= Opcodes.ACC_PROTECTED;
+                            access -= Opcodes.ACC_PROTECTED;
                         else break print;
 
                         IO.println("[+] public  field      %s %s".formatted(typeName, name));
@@ -121,7 +121,7 @@ public class Transformer {
                 if (typeFieldsB.getOrDefault(descriptor, 0) == 1) {
                     // Remove final
                     if ((access & Opcodes.ACC_FINAL) == Opcodes.ACC_FINAL) {
-                        access |= Opcodes.ACC_FINAL;
+                        access -= Opcodes.ACC_FINAL;
                         IO.println("[+] mutable field      %s %s".formatted(typeName, name));
                     }
                 }

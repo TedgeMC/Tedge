@@ -26,9 +26,9 @@ public class MethodPublicizer extends ClassVisitor {
             {
                 // Set as public
                 if ((access & Opcodes.ACC_PRIVATE) == Opcodes.ACC_PRIVATE)
-                    access |= Opcodes.ACC_PRIVATE;
+                    access -= Opcodes.ACC_PRIVATE;
                 else if ((access & Opcodes.ACC_PROTECTED) == Opcodes.ACC_PROTECTED)
-                    access |= Opcodes.ACC_PROTECTED;
+                    access -= Opcodes.ACC_PROTECTED;
                 else if ((access & Opcodes.ACC_PUBLIC) != Opcodes.ACC_PUBLIC)
                     access |= Opcodes.ACC_PUBLIC;
                 else break print;
@@ -37,7 +37,7 @@ public class MethodPublicizer extends ClassVisitor {
             }
 
             if ((access & Opcodes.ACC_FINAL) == Opcodes.ACC_FINAL) {
-                access |= Opcodes.ACC_FINAL;
+                access -= Opcodes.ACC_FINAL;
 
                 IO.println("[+] mutable method     %s %s%s".formatted(typeName, name, Objects.requireNonNullElse(signature, "")));
             }
