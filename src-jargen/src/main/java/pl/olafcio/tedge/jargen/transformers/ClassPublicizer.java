@@ -16,6 +16,8 @@ public class ClassPublicizer extends ClassVisitor {
                 access |= Opcodes.ACC_PROTECTED;
             else if ((access & Opcodes.ACC_PRIVATE) == Opcodes.ACC_PRIVATE)
                 access |= Opcodes.ACC_PRIVATE;
+            else if ((access & Opcodes.ACC_PUBLIC) != Opcodes.ACC_PUBLIC)
+                access |= Opcodes.ACC_PUBLIC;
             else break print;
 
             IO.println("[+] public %s %s".formatted(
