@@ -1,3 +1,4 @@
 rootProject.name = 'TedgeMC'
 
 include 'src-jargen'
+include 'src-launcher'

@@ -1,0 +1,16 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Launcher" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="pl.olafcio.tedge.launcher.Main" />
+    <module name="TedgeMC.src-launcher.main" />
+    <option name="PROGRAM_PARAMETERS" value="26.1" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="pl.olafcio.tedge.launcher.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
