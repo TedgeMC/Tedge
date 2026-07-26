@@ -14,9 +14,9 @@ public class ClassPublicizer extends ClassVisitor {
         int ch = 2;
 
         if ((access & Opcodes.ACC_PROTECTED) == Opcodes.ACC_PROTECTED)
-            access -= Opcodes.ACC_PROTECTED;
+            access = (access - Opcodes.ACC_PROTECTED) | Opcodes.ACC_PUBLIC;
         else if ((access & Opcodes.ACC_PRIVATE) == Opcodes.ACC_PRIVATE)
-            access -= Opcodes.ACC_PRIVATE;
+            access = (access - Opcodes.ACC_PRIVATE) | Opcodes.ACC_PUBLIC;
         else if ((access & Opcodes.ACC_PUBLIC) != Opcodes.ACC_PUBLIC)
             access |= Opcodes.ACC_PUBLIC;
         else ch--;
