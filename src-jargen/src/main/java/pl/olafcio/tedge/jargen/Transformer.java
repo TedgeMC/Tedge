@@ -5,9 +5,12 @@ import org.objectweb.asm.*;
 import pl.olafcio.tedge.jargen.transformers.ClassPublicizer;
 import pl.olafcio.tedge.jargen.transformers.MethodPublicizer;
 import pl.olafcio.tedge.jargen.transformers.FieldPublicizer;
+import pl.olafcio.tedge.jargen.transformers.specific.BrandModifier;
 
 import java.io.*;
+import java.lang.reflect.Field;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -69,6 +72,24 @@ public class Transformer {
         visitor = new ClassPublicizer(Opcodes.ASM9, visitor);
         visitor = new MethodPublicizer(Opcodes.ASM9, visitor);
         visitor = new FieldPublicizer(Opcodes.ASM9, visitor);
+
+        if (entry.getName().equals("net/minecraft/client/ClientBrandRetriever.class")) {
+            try {
+                var field = reader.getClass().getDeclaredField("constantUtf8Values");
+                field.setAccessible(true);
+
+                var constants = (String[])
+                                field.get(reader);
+
+                for (int i = 0; i < constants.length; i++)
+                    if (Objects.equals(constants[i], "vanilla"))
+                        constants[i] = "Tedge";
+
+                visitor = new BrandModifier(Opcodes.ASM9, visitor);
+            } catch (IllegalAccessException | NoSuchFieldException e) {
+                throw new RuntimeException("Failed to change client brand", e);
+            }
+        }
 
         reader.accept(visitor, 0);
         bytes = writer.toByteArray();
