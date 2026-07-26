@@ -13,8 +13,20 @@ dependencies {
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    compileOnly files(projectDir.toPath().resolve("libs/minecraft-merged-2a03a8a92d-26.1-transformed.jar"))
+
+    implementation 'com.google.code.gson:gson:2.8.9'
+    implementation 'org.jspecify:jspecify:1.0.0'
+    implementation 'org.ow2.asm:asm:9.10.1'
 }
 
 test {
     useJUnitPlatform()
+}
+
+jar {
+    manifest {
+        attributes("Main-Class": "pl.olafcio.tedge.Main")
+    }
 }

@@ -1,17 +1,84 @@
 package pl.olafcio.tedge;
 
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import org.jspecify.annotations.NonNull;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.sql.Date;
+import java.time.Instant;
+import java.util.UUID;
+
 public class Main {
-//    static void main() {
-//        //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
-//        // to see how IntelliJ IDEA suggests fixing it.
-//        IO.println(String.format("Hello and welcome!"));
-//
-//        for (int i = 1; i <= 5; i++) {
-//            //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-//            // for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-//            IO.println("i = " + i);
-//        }
-//    }
+    static void main(String[] args) {
+        byte[] data;
+
+        try (var stream = Main.class.getResourceAsStream("/version.json")) {
+            data = stream.readAllBytes();
+        } catch (IOException e) {
+            IO.println("[Tedge] Failed to fetch Minecraft version; aborting");
+            System.exit(1);
+
+            return;
+        }
+
+        var gson = new Gson().fromJson(new String(data, StandardCharsets.UTF_8), JsonObject.class);
+        var version = getMCVersion(gson);
+
+        IO.println("Running Tedge-DEV on Minecraft " + version);
+
+        if (args.length == 1) {
+            if (args[0].equals("@dev")) {
+                args = new String[]{
+                        "--offlineDeveloperMode",
+                        "--uuid", UUID.randomUUID().toString(),
+                        "--accessToken", "",
+                        "--username", "Dev" + System.currentTimeMillis() % 1000L,
+                        "--version", version,
+                        "--versionType", "Tedge"
+                };
+            }
+        }
+
+        net.minecraft.SharedConstants.setVersion(new net.minecraft.WorldVersion.Simple(
+                gson.get("id").getAsString(),
+                gson.get("name").getAsString(),
+                new net.minecraft.world.level.storage.DataVersion(
+                        gson.get("world_version").getAsInt(),
+                        gson.get("series_id").getAsString()
+                ),
+                gson.get("protocol_version").getAsInt(),
+                new net.minecraft.server.packs.metadata.pack.PackFormat(
+                        gson.getAsJsonObject("pack_version").get("resource_major").getAsInt(),
+                        gson.getAsJsonObject("pack_version").get("resource_minor").getAsInt()
+                ),
+                new net.minecraft.server.packs.metadata.pack.PackFormat(
+                        gson.getAsJsonObject("pack_version").get("data_major").getAsInt(),
+                        gson.getAsJsonObject("pack_version").get("data_minor").getAsInt()
+                ),
+                Date.from(Instant.parse(gson.get("build_time").getAsString())),
+                gson.get("stable").getAsBoolean()
+        ));
+
+        net.minecraft.client.main.Main.main(args);
+    }
+
+    @NonNull
+    private static String getMCVersion(JsonObject gson) {
+        String version;
+
+        if (gson.has("name")) {
+            version = gson.get("name").getAsString();
+        } else if (gson.has("id")) {
+            version = gson.get("id").getAsString();
+        } else {
+            IO.println("[Tedge] Failed to fetch Minecraft version; aborting");
+            System.exit(1);
+
+            return null;
+        }
+
+        return version;
+    }
 }
