@@ -46,7 +46,7 @@ final class Agent {
             throw e;
         }
 
-        loadMods(modsDir);
+        loadMods(modsDir, inst);
 
         IO.println("[Tedge]");
         IO.println("[Tedge] Loading %d mod%s:".formatted(ModList.mods.size(), ModList.mods.size() == 1 ? "" : "s"));
@@ -65,7 +65,7 @@ final class Agent {
             IO.println("[Tedge]");
     }
 
-    private static void loadMods(Path modsDir) {
+    private static void loadMods(Path modsDir, Instrumentation inst) {
         try (var mods = Files.list(modsDir)) {
             mods.forEach(mod -> {
                 try {
@@ -82,6 +82,7 @@ final class Agent {
                     modYaml.close();
 
                     ModList.mods.put(mod, new Mod(yml, jar));
+                    inst.appendToSystemClassLoaderSearch(jar);
                 } catch (MalformedURLException e) {
                     throw new RuntimeException("Failed to load mod '%s'".formatted(mod.getFileName().toString()), e);
                 } catch (IOException e) {

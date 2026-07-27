@@ -72,10 +72,7 @@ public class Main {
             var mod = entry.getValue();
             var path = entry.getKey();
 
-            URLClassLoader classLoader;
-
-            try                             { classLoader = new URLClassLoader(new URL[]{ path.toUri().toURL() }, Main.class.getClassLoader()); }
-            catch (MalformedURLException e) { throw new RuntimeException(e);                                                                    }
+            var classLoader = ClassLoader.getSystemClassLoader();
 
             var load = mod.yml().get("load");
             if (load != null)
