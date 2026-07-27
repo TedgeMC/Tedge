@@ -49,8 +49,19 @@ public class ClassPublicizer extends ClassVisitor {
 
             if (Main.verbose)
                 IO.println("[+] mutable %s %s".formatted(objectType, name));
+        } else if ((access & Opcodes.ACC_MANDATED) == Opcodes.ACC_MANDATED) {
+            access -= Opcodes.ACC_MANDATED;
+
+            if (Main.verbose)
+                IO.println("[+] open %s %s".formatted(objectType, name));
         }
+
+        if ((access & Opcodes.ACC_OPEN) == Opcodes.ACC_OPEN)
+            access -= Opcodes.ACC_OPEN;
 
         super.visit(version, access, name, signature, superName, interfaces);
     }
+
+    @Override
+    public void visitPermittedSubclass(String permittedSubclass) {}
 }
