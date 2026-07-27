@@ -31,7 +31,9 @@ public class Main {
         var gson = new Gson().fromJson(new String(data, StandardCharsets.UTF_8), JsonObject.class);
         var version = getMCVersion(gson);
 
-        IO.println("Running Tedge-DEV on Minecraft " + version);
+        IO.println("[Tedge] Starting Minecraft " + version);
+        IO.println("[Tedge]");
+        IO.println();
 
         if (args.length == 1) {
             if (args[0].equals("@dev")) {
@@ -102,6 +104,8 @@ public class Main {
                     }
                 });
         }
+
+        IO.println("[Tedge] Executed all mod initializers");
 
         net.minecraft.client.main.Main.main(args);
     }

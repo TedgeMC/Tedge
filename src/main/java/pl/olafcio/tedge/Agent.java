@@ -15,16 +15,57 @@ import java.util.jar.JarFile;
 
 final class Agent {
     public static void premain(String args, Instrumentation inst) throws UnmodifiableClassException, ClassNotFoundException, IOException {
-        nativeTransformations(inst);
+        IO.println();
 
-        ModList.mods = new HashMap<>();
+        Path modsDir;
 
-        var modsDir = Path.of("./mods");
-        if (!Files.isDirectory(modsDir)) {
-            Files.createDirectories(modsDir);
-            return;
+        try {
+            nativeTransformations(inst);
+
+            ModList.mods = new HashMap<>();
+
+            modsDir = Path.of("./mods");
+            if (!Files.isDirectory(modsDir)) {
+                Files.createDirectories(modsDir);
+                return;
+            }
+        } catch (Exception e) {
+            IO.println("[Tedge] ");
+            IO.println("[Tedge] ");
+            IO.println("[Tedge] ");
+            IO.println("[Tedge] !@#@! EARLY PREMAIN FAILED !@#@!");
+            IO.println("[Tedge] ");
+            IO.println("[Tedge] ");
+            IO.println("[Tedge] ");
+            IO.println();
+
+            e.printStackTrace();
+
+            IO.println();
+
+            throw e;
         }
 
+        loadMods(modsDir);
+
+        IO.println("[Tedge]");
+        IO.println("[Tedge] Loading %d mod%s:".formatted(ModList.mods.size(), ModList.mods.size() == 1 ? "" : "s"));
+
+        var lengthOfIndex = String.valueOf(ModList.mods.size()).length();
+
+        int index = 0;
+        for (var mod : ModList.mods.values())
+            IO.println("[Tedge]   #%d%s // %s".formatted(
+                    ++index,
+                    " ".repeat(lengthOfIndex - String.valueOf(index).length()),
+                    mod.yml().get("name")
+            ));
+
+        if (!ModList.mods.isEmpty())
+            IO.println("[Tedge]");
+    }
+
+    private static void loadMods(Path modsDir) {
         try (var mods = Files.list(modsDir)) {
             mods.forEach(mod -> {
                 try {
