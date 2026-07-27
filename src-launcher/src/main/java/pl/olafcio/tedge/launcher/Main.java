@@ -196,7 +196,7 @@ public class Main {
     }
 
     private static JsonObject getVersionsJSON() throws IOException {
-        var versionsBytes = Files.readAllBytes(BASE_PATH);
+        var versionsBytes = Files.readAllBytes(BASE_PATH.resolve("version_manifest.json"));
         var versionsJSON = new Gson().fromJson(new String(versionsBytes, StandardCharsets.UTF_8), JsonObject.class);
 
         return versionsJSON;
