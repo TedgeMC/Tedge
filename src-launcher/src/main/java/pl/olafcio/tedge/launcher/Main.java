@@ -91,12 +91,13 @@ public class Main {
             return;
         }
 
-        Path jar;
+        Path jar = versionPath.resolve("client.jar");
 
-        Files.write(jar = versionPath.resolve("client.jar"), Requests.get(versionJSON.getAsJsonObject("downloads")
-                                                                           .getAsJsonObject("client")
-                                                                           .get("url")
-                                                                           .getAsString()));
+        if (!Files.isRegularFile(jar))
+            Files.write(jar, Requests.get(versionJSON.getAsJsonObject("downloads")
+                                                     .getAsJsonObject("client")
+                                                     .get("url")
+                                                     .getAsString()));
 
 //        Files.write(versionPath.resolve("server.jar"), Requests.get(versionJSON.getAsJsonObject("downloads")
 //                                                                     .getAsJsonObject("server")
