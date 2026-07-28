@@ -1,4 +1,7 @@
+import java.nio.file.Files
 import java.nio.file.Path
+import java.util.zip.ZipFile
+import java.util.zip.ZipOutputStream
 
 plugins {
     id 'java'
@@ -11,6 +14,29 @@ repositories {
     mavenCentral()
 }
 
+var urlDependencies = new String[]{
+        "https://github.com/TedgeMC/Tedge-Mixin/releases/download/${project.mixin}/TedgeMixin-${project.mixin}.jar"
+}
+
+var libsFolder = projectDir.toPath().resolve("libs")
+if (!Files.exists(libsFolder)) {
+    Files.createDirectory(libsFolder)
+
+    for (var raw : urlDependencies) {
+        var url = URI.create(raw).toURL()
+        var conn = url.openConnection()
+
+        conn.setDoInput(true)
+        conn.connect()
+
+        try (var stream = conn.getInputStream()) {
+            var jar = stream.readAllBytes()
+
+            Files.write(libsFolder.resolve(raw.split("/")[-1]), jar)
+        }
+    }
+}
+
 dependencies {
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -21,7 +47,10 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.8.9'
     implementation 'org.jspecify:jspecify:1.0.0'
     implementation 'org.ow2.asm:asm:9.10.1'
+    implementation 'org.ow2.asm:asm-tree:9.10.1'
     implementation 'org.yaml:snakeyaml:2.2'
+
+    implementation rootProject.files("libs/TedgeMixin-1.0-SNAPSHOT.jar")
 }
 
 test {
@@ -36,4 +65,52 @@ jar {
                    "Can-Retransform-Classes": 'true',
                    "Can-Set-Native-Method-Prefix": 'true')
     }
+
+    from {
+        configurations.runtimeClasspath.findAll { f -> ['TedgeMixin-'].stream().anyMatch { f.name.startsWith(it) } }
+                .collect {
+                    // exclude does not work. hurray!
+                    var file = (File) it
+                    var path = file.toPath()
+
+                    def filename = path.getFileName().toString()
+                    def nometainf = Path.of(System.getenv("USERPROFILE") + "/.gradle/caches/Tedge-ML/libraries-loader/")
+
+                    Files.createDirectories(nometainf)
+
+                    var nmi = nometainf.resolve(filename.substring(0, filename.length() - 4) + "-nometainf.jar")
+                    var nmiFile = nmi.toFile()
+
+                    if (!nmiFile.exists()) {
+                        var bos = new ByteArrayOutputStream();
+                        var zos = new ZipOutputStream(bos);
+
+                        try (var zip = new ZipFile(file)) {
+                            var entries = zip.entries()
+                            for (var e : entries) {
+                                var name = e.getName()
+                                if (!name.startsWith("META-INF") && name.lastIndexOf("/") > 2) {
+                                    zos.putNextEntry(e)
+
+                                    try (var stream = zip.getInputStream(e)) {
+                                        zos.write(stream.readAllBytes())
+                                    }
+                                }
+                            }
+                        }
+
+                        zos.close()
+
+                        try (var fileStream = new FileOutputStream(nmiFile)) {
+                            fileStream.write(bos.toByteArray())
+                        }
+                    }
+
+                    zipTree(nmiFile)
+                }
+    }
+
+    // omg what is this code
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
