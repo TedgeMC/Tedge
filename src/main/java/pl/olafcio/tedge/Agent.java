@@ -1,11 +1,19 @@
 package pl.olafcio.tedge;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.objectweb.asm.*;
 import org.yaml.snakeyaml.Yaml;
+import pl.olafcio.tedge_mixin.MixinLoader;
+import pl.olafcio.tedge_mixin.config.InjectorsConfig;
+import pl.olafcio.tedge_mixin.config.MixinConfig;
+import pl.olafcio.tedge_mixin.config.TedgeConfig;
 
 import java.io.IOException;
 import java.lang.instrument.*;
 import java.net.MalformedURLException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -83,6 +91,39 @@ final class Agent {
 
                     ModList.mods.put(mod, new Mod(yml, jar));
                     inst.appendToSystemClassLoaderSearch(jar);
+
+                    // <----------------------------------->
+                    // <--> MIXIN CONFIG IS LOADED HERE <-->
+                    // <----------------------------------->
+                    JsonObject mixinconfig;
+
+                    try (var stream = jar.getInputStream(jar.getEntry(yml.get("id") + ".mixins.json"))) {
+                        mixinconfig = new Gson().fromJson(
+                                new String(stream.readAllBytes(), StandardCharsets.UTF_8),
+                                JsonObject.class
+                        );
+                    }
+
+                    // <------------------------------>
+                    // <--> MIXINS ARE LOADED HERE <-->
+                    // <------------------------------>
+                    new MixinLoader(inst).addInjections(
+                            new MixinConfig(
+                                    mixinconfig.get("required").getAsBoolean(),
+                                    mixinconfig.get("refmap").getAsString(),
+                                    mixinconfig.get("package").getAsString(),
+                                    GsonUtil.mapToArray(mixinconfig.getAsJsonArray("mixins"), JsonElement::getAsString, String[]::new),
+                                    GsonUtil.mapToArray(mixinconfig.getAsJsonArray("client"), JsonElement::getAsString, String[]::new),
+                                    mixinconfig.get("minVersion").getAsString(),
+                                    new InjectorsConfig(
+                                        mixinconfig.getAsJsonObject("injectors").get("defaultRequire").getAsInt()
+                                    ),
+                                    new TedgeConfig(
+                                            yml.get("id") + "$"
+                                    )
+                            ),
+                            jar
+                    );
                 } catch (MalformedURLException e) {
                     throw new RuntimeException("Failed to load mod '%s'".formatted(mod.getFileName().toString()), e);
                 } catch (IOException e) {

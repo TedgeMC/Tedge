@@ -1,5 +1,6 @@
 .gradle
 build/
+libs/
 /run*/
 *__*/
 !gradle/wrapper/gradle-wrapper.jar
