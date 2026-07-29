@@ -10,6 +10,7 @@ import pl.olafcio.tedge_mixin.config.InjectorsConfig;
 import pl.olafcio.tedge_mixin.config.MixinConfig;
 import pl.olafcio.tedge_mixin.config.TedgeConfig;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.instrument.*;
 import java.net.MalformedURLException;
@@ -20,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.jar.JarFile;
+import java.util.zip.ZipOutputStream;
 
 final class Agent {
     public static void premain(String args, Instrumentation inst) throws UnmodifiableClassException, ClassNotFoundException, IOException {
@@ -74,6 +76,11 @@ final class Agent {
     }
 
     private static void loadMods(Path modsDir, Instrumentation inst) {
+        Path transformedMods = Path.of("./.tedge/transformed-mods");
+
+        try                   { Files.createDirectories(transformedMods);                                            }
+        catch (IOException e) { throw new RuntimeException("Unable to create .tedge/transformed-mods directory", e); }
+
         try (var mods = Files.list(modsDir)) {
             mods.forEach(mod -> {
                 try {
@@ -89,9 +96,6 @@ final class Agent {
 
                     modYaml.close();
 
-                    ModList.mods.put(mod, new Mod(yml, jar));
-                    inst.appendToSystemClassLoaderSearch(jar);
-
                     // <----------------------------------->
                     // <--> MIXIN CONFIG IS LOADED HERE <-->
                     // <----------------------------------->
@@ -104,10 +108,15 @@ final class Agent {
                         );
                     }
 
-                    // <------------------------------>
-                    // <--> MIXINS ARE LOADED HERE <-->
-                    // <------------------------------>
-                    new MixinLoader(inst).addInjections(
+                    // <--------------------------------->
+                    // <--> JARS ARE TRANSFORMED HERE <-->
+                    // <--------------------------------->
+                    var loader = new MixinLoader(inst);
+
+                    var byteout = new ByteArrayOutputStream();
+                    var jarout = new ZipOutputStream(byteout);
+
+                    loader.addInjections(
                             new MixinConfig(
                                     mixinconfig.get("required").getAsBoolean(),
                                     mixinconfig.get("refmap").getAsString(),
@@ -122,8 +131,29 @@ final class Agent {
                                             yml.get("id") + "$"
                                     )
                             ),
-                            jar
+                            jar,
+                            jarout
                     );
+
+                    jarout.close();
+
+                    var transformedPath = transformedMods.resolve(mod.getFileName());
+
+                    Files.write(transformedPath, byteout.toByteArray());
+
+                    byteout.close();
+
+                    jar = new JarFile(transformedPath.toFile());
+
+                    // <---------------------------->
+                    // <--> JARS ARE LOADED HERE <-->
+                    // <---------------------------->
+
+                    ModList.mods.put(mod, new Mod(yml, jar));
+
+                    inst.appendToSystemClassLoaderSearch(jar);
+
+                    loader.finishInjections();
                 } catch (MalformedURLException e) {
                     throw new RuntimeException("Failed to load mod '%s'".formatted(mod.getFileName().toString()), e);
                 } catch (IOException e) {
