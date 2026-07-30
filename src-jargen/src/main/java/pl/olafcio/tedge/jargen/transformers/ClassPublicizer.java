@@ -35,6 +35,7 @@ public class ClassPublicizer extends ClassVisitor {
                             _enum                                                       ? "-enum     " :
                             (access & Opcodes.ACC_INTERFACE)  == Opcodes.ACC_INTERFACE  ? "interface " :
                             (access & Opcodes.ACC_ANNOTATION) == Opcodes.ACC_ANNOTATION ? "@interface" :
+                            (access & Opcodes.ACC_MODULE)     == Opcodes.ACC_MODULE     ? "module"     :
                                                                                            "class    ";
 
         if (ch > 0)
@@ -49,18 +50,15 @@ public class ClassPublicizer extends ClassVisitor {
 
             if (Main.verbose)
                 IO.println("[+] mutable %s %s".formatted(objectType, name));
-        } else if ((access & Opcodes.ACC_MANDATED) == Opcodes.ACC_MANDATED) {
-            access -= Opcodes.ACC_MANDATED;
-
-            if (Main.verbose)
-                IO.println("[+] open %s %s".formatted(objectType, name));
         }
 
         if (
                 (access & Opcodes.ACC_MODULE) == Opcodes.ACC_MODULE &&
                 (access & Opcodes.ACC_OPEN) != Opcodes.ACC_OPEN
-        )
+        ) {
             access |= Opcodes.ACC_OPEN;
+            IO.println("[+] open %s %s".formatted(objectType, name));
+        }
 
         super.visit(version, access, name, signature, superName, interfaces);
     }
