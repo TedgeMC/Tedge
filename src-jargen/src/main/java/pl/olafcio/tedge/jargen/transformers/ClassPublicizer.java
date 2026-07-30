@@ -56,8 +56,11 @@ public class ClassPublicizer extends ClassVisitor {
                 IO.println("[+] open %s %s".formatted(objectType, name));
         }
 
-        if ((access & Opcodes.ACC_OPEN) == Opcodes.ACC_OPEN)
-            access -= Opcodes.ACC_OPEN;
+        if (
+                (access & Opcodes.ACC_MODULE) == Opcodes.ACC_MODULE &&
+                (access & Opcodes.ACC_OPEN) != Opcodes.ACC_OPEN
+        )
+            access |= Opcodes.ACC_OPEN;
 
         super.visit(version, access, name, signature, superName, interfaces);
     }
