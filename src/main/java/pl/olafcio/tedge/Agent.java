@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import org.objectweb.asm.*;
 import org.yaml.snakeyaml.Yaml;
 import pl.olafcio.accesseditors.AccessEditorLoader;
+import pl.olafcio.tedge_mixin.Environment;
 import pl.olafcio.tedge_mixin.MixinLoader;
 import pl.olafcio.tedge_mixin.config.InjectorsConfig;
 import pl.olafcio.tedge_mixin.config.MixinConfig;
@@ -14,10 +15,12 @@ import pl.olafcio.tedge_mixin.config.TedgeConfig;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.instrument.*;
+import java.lang.management.ManagementFactory;
 import java.net.MalformedURLException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -137,6 +140,7 @@ final class Agent {
                                     mixinconfig.get("package").getAsString(),
                                     GsonUtil.mapToArray(mixinconfig.getAsJsonArray("mixins"), JsonElement::getAsString, String[]::new),
                                     GsonUtil.mapToArray(mixinconfig.getAsJsonArray("client"), JsonElement::getAsString, String[]::new),
+                                    GsonUtil.mapToArray(mixinconfig.getAsJsonArray("server"), JsonElement::getAsString, String[]::new),
                                     mixinconfig.get("minVersion").getAsString(),
                                     new InjectorsConfig(
                                         mixinconfig.getAsJsonObject("injectors").get("defaultRequire").getAsInt()
@@ -146,7 +150,11 @@ final class Agent {
                                     )
                             ),
                             jar,
-                            jarout
+                            jarout,
+                            Arrays.stream(ManagementFactory.getRuntimeMXBean().getClassPath().split(";"))
+                                  .anyMatch(jarpath -> jarpath.contains("client"))
+                                    ? Environment.CLIENT
+                                    : Environment.SERVER
                     );
 
                     jarout.close();
