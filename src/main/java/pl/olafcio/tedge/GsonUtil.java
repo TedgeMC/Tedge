@@ -20,13 +20,17 @@ final class GsonUtil {
     }
 
     public static <T> T[] mapToArray(JsonArray array, Function<JsonElement, T> mapper, Function<Integer, T[]> arraysupplier) {
-        var out = arraysupplier.apply(array.size());
+        if (array == null) {
+            return arraysupplier.apply(0);
+        } else {
+            var out = arraysupplier.apply(array.size());
 
-        int i = 0;
-        for (JsonElement element : array) {
-            out[i++] = mapper.apply(element);
+            int i = 0;
+            for (JsonElement element : array) {
+                out[i++] = mapper.apply(element);
+            }
+
+            return out;
         }
-
-        return out;
     }
 }
