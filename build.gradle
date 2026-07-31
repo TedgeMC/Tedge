@@ -15,7 +15,8 @@ repositories {
 }
 
 var urlDependencies = new String[]{
-        "https://github.com/TedgeMC/Tedge-Mixin/releases/download/${project.mixin}/TedgeMixin-${project.mixin}.jar"
+        "https://github.com/TedgeMC/Tedge-Mixin/releases/download/${project.mixin}/TedgeMixin-${project.mixin}.jar",
+        "https://github.com/TedgeMC/AccessEditors/releases/download/${project.accesseditors}/AccessEditors-${project.accesseditors}.jar"
 }
 
 var libsFolder = projectDir.toPath().resolve("libs")
@@ -67,7 +68,7 @@ jar {
     }
 
     from {
-        configurations.runtimeClasspath.findAll { f -> ['TedgeMixin-'].stream().anyMatch { f.name.startsWith(it) } }
+        configurations.runtimeClasspath.findAll { f -> ['TedgeMixin-', 'AccessEditors-'].stream().anyMatch { f.name.startsWith(it) } }
                 .collect {
                     // exclude does not work. hurray!
                     var file = (File) it

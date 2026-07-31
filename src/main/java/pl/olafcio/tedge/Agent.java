@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.objectweb.asm.*;
 import org.yaml.snakeyaml.Yaml;
+import pl.olafcio.accesseditors.AccessEditorLoader;
 import pl.olafcio.tedge_mixin.MixinLoader;
 import pl.olafcio.tedge_mixin.config.InjectorsConfig;
 import pl.olafcio.tedge_mixin.config.MixinConfig;
@@ -81,6 +82,8 @@ final class Agent {
         try                   { Files.createDirectories(transformedMods);                                            }
         catch (IOException e) { throw new RuntimeException("Unable to create .tedge/transformed-mods directory", e); }
 
+        final var accesseditors = new AccessEditorLoader();
+
         try (var mods = Files.list(modsDir)) {
             mods.forEach(mod -> {
                 try {
@@ -106,6 +109,17 @@ final class Agent {
                                 new String(stream.readAllBytes(), StandardCharsets.UTF_8),
                                 JsonObject.class
                         );
+                    }
+
+                    // <-------------------------------------->
+                    // <--> ACCESS EDITORS ARE LOADED HERE <-->
+                    // <-------------------------------------->
+
+                    var accesseditor = jar.getEntry("tedge.mod.accesseditor");
+                    if (accesseditor != null) {
+                        try (var stream = jar.getInputStream(accesseditor)) {
+                            accesseditors.add(new String(stream.readAllBytes(), StandardCharsets.UTF_8));
+                        }
                     }
 
                     // <--------------------------------->
@@ -163,6 +177,13 @@ final class Agent {
         } catch (IOException e) {
             throw new RuntimeException("Failed to enumerate mods", e);
         }
+
+        // <--------------------------------------->
+        // <--> ACCESS EDITORS ARE APPLIED HERE <-->
+        // <--------------------------------------->
+
+        accesseditors.apply(inst);
+        IO.println("[Tedge] Loaded access editors");
     }
 
     private static void nativeTransformations(Instrumentation inst) throws IOException, ClassNotFoundException, UnmodifiableClassException {
