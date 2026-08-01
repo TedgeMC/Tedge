@@ -172,10 +172,12 @@ public class Main {
                             try (var stream = zip.getInputStream(el)) {
                                 Path path = Paths.LIBRARIES_PATH.resolve(name);
 
-                                Files.createDirectories(path.getParent());
+                                if (!Files.exists(path)) {
+                                    Files.createDirectories(path.getParent());
 
-                                try (var file = new FileOutputStream(path.toFile())) {
-                                    stream.transferTo(file);
+                                    try (var file = new FileOutputStream(path.toFile())) {
+                                        stream.transferTo(file);
+                                    }
                                 }
 
                                 classpathServer.add(path.toString());
