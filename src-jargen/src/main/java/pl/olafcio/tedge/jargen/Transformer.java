@@ -52,9 +52,13 @@ public class Transformer {
     protected void handleEntry(ZipEntry entry, InputStream stream) {
         if (entry.getName().endsWith(".class")) {
             transformClass(entry, stream);
-        } else if (entry.getName().equals("META-INF/MANIFEST.MF")) {
-            // Ignore MANIFEST; it disables integrity checks
-            return;
+        } else if (
+                entry.getName().equals("META-INF/MANIFEST.MF") ||
+                entry.getName().equals("META-INF/MOJANGCS.RSA") ||
+                entry.getName().equals("META-INF/MOJANGCS.SF")
+        ) {
+            // MANIFEST = integrity checks
+            // the rest is garbage tbh
         } else {
             try                   { write(entry, stream.readAllBytes());                               }
             catch (IOException e) { throw new RuntimeException("Failed to copy entry inside .jar", e); }
