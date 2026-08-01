@@ -46,6 +46,18 @@ public class MethodPublicizer extends ClassVisitor {
             }
         }
 
-        return super.visitMethod(access, name, descriptor, signature, exceptions);
+        return new MethodVisitor(Opcodes.ASM9, super.visitMethod(access, name, descriptor, signature, exceptions)) {
+            @Override
+            public void visitParameter(String name, int access) {
+                if ((access & Opcodes.ACC_FINAL) == Opcodes.ACC_FINAL) {
+                    access -= Opcodes.ACC_FINAL;
+
+                    if (Main.verbose)
+                        IO.println("[+] mutable parameter  %s %s%s -> %s".formatted(typeName, name, Objects.requireNonNullElse(signature, ""), name));
+                }
+
+                super.visitParameter(name, access);
+            }
+        };
     }
 }
