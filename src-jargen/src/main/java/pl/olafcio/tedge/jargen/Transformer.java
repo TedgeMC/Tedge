@@ -38,7 +38,7 @@ public class Transformer {
         } catch (IOException e) {
             throw new RuntimeException("Failed to open .jar file", e);
         } catch (NoSuchElementException e) {
-            throw new RuntimeException("Empty .jar file", e);
+            IO.println("[Jargen] Empty jar file; no transformations have been made");
         }
 
         try {
