@@ -212,8 +212,13 @@ public class Main {
         classpathClient.add(transformer.append(jarClient));
         classpathServer.add(transformer.append(jarServer));
 
-        if (jargenPending)
+        if (jargenPending) {
             transformer.transform();
+
+            Files.delete(jarClient);
+            Files.delete(jarServer);
+            Files.delete(jarShared);
+        }
 
         // Save the classpath
         if (classpathPending) {
