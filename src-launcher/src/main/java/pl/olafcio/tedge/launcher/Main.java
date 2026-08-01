@@ -4,31 +4,27 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
-import pl.olafcio.tedge.jargen.Transformer;
+import pl.olafcio.tedge.launcher.endpoints.MavenController;
+import pl.olafcio.tedge.launcher.endpoints.MinecraftController;
+import pl.olafcio.tedge.launcher.phases.DuplicateReducer;
+import pl.olafcio.tedge.launcher.phases.MultiTransformer;
+import pl.olafcio.tedge.launcher.util.Paths;
+import pl.olafcio.tedge.launcher.util.Requests;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.zip.ZipFile;
 
 /**
  * The main class for the dev launcher.
  */
 @NullMarked
 public class Main {
-
-    private static final Path BASE_PATH
-                       = Path.of(System.getenv("USERPROFILE") + "/.gradle/caches/Tedge-ML");
-
-    private static final Path LIBRARIES_PATH
-                       = BASE_PATH.resolve("libraries");
-
     public static void main(String[] args) throws IOException {
 //        var dry = args.length >= 1 && args[0].equals("--dry");
 //        if (dry) {
@@ -56,7 +52,7 @@ public class Main {
             if (obj == null)
                 throw new Exception();
         } catch (Exception e) {
-            obj = findVersion(id, downloadVersionsJSON());
+            obj = findVersion(id, MinecraftController.downloadVersionsJSON());
 
             if (obj == null) {
                 IO.println("[Launcher] Version '%s' not found".formatted(id));
@@ -64,7 +60,7 @@ public class Main {
             }
         }
 
-        var versionPath = BASE_PATH.resolve(id);
+        var versionPath = Paths.BASE_PATH.resolve(id);
         Files.createDirectories(versionPath);
 
         var manifestURL = obj.get("url").getAsString();
@@ -91,113 +87,164 @@ public class Main {
             return;
         }
 
-        Path jar = versionPath.resolve("client.jar");
+        Path jarClient;
+        Path jarServer;
+        Path jarShared;
 
-        if (!Files.isRegularFile(jar))
-            Files.write(jar, Requests.get(versionJSON.getAsJsonObject("downloads")
-                                                     .getAsJsonObject("client")
-                                                     .get("url")
-                                                     .getAsString()));
+        var classpathClient = new ArrayList<String>();
+        var classpathServer = new ArrayList<String>();
 
-//        Files.write(versionPath.resolve("server.jar"), Requests.get(versionJSON.getAsJsonObject("downloads")
-//                                                                     .getAsJsonObject("server")
-//                                                                     .get("url")
-//                                                                     .getAsString()));
+        boolean jargenPending = true;
+        boolean classpathPending = false;
 
-        var classpath = new ArrayList<String>();
+        if (
+                (jarClient = versionPath.resolve("client-only-transformed.jar")).toFile().isFile() &&
+                (jarServer = versionPath.resolve("server-only-transformed.jar")).toFile().isFile() &&
+                (jarShared = versionPath.resolve("shared-transformed.jar")).toFile().isFile()
+        ) {
+            MavenController.downloadMavenLibraries(versionLibs, classpathClient);
 
-        for (var element : versionLibs) {
-            if (!element.isJsonObject())
-                continue;
+            IO.println("[Launcher] All reduced resources on disk.");
 
-            var lib = (JsonObject) element;
-            var downloads = lib.getAsJsonObject("downloads")
-                               .getAsJsonObject("artifact");
+            jargenPending = false;
+        } else if (
+                (jarClient = versionPath.resolve("client-only.jar")).toFile().isFile() &&
+                (jarServer = versionPath.resolve("server-only.jar")).toFile().isFile() &&
+                (jarShared = versionPath.resolve("shared.jar")).toFile().isFile()
+        ) {
+            MavenController.downloadMavenLibraries(versionLibs, classpathClient);
 
-            var file_path = downloads.get("path").getAsString().replace("../", "");
-            var file_url = downloads.get("url").getAsString();
+            IO.println("[Launcher] All internet resources on disk.");
+        } else {
+                jarClient        = resolve(versionPath, "client.jar",         versionJSON, "client");
+            var jarServerWrapper = resolve(versionPath, "server-wrapper.jar", versionJSON, "server");
 
-            while (file_path.startsWith("/")) file_path = file_path.substring(1);
-            while (file_path.endsWith("/"))   file_path = file_path.substring(0, file_path.length() - 1);
+            MavenController.downloadMavenLibraries(versionLibs, classpathClient);
 
-            if (
-                    file_path.contains("..") ||
-                    file_path.contains("//") ||
-                    Arrays.asList(file_path.split("/")).contains("con"))
-            {
-                IO.println("[Launcher] [WARNING] Version artifact '%s' has illegal elements".formatted(file_path));
-                continue;
-            }
+            IO.println("[Launcher] All internet resources on disk.");
 
-            op:
-            {
-                var chars = file_path.toCharArray();
+            try (var zip = new ZipFile(jarServerWrapper.toFile())) {
+                var entry = zip.getEntry("META-INF/versions/%1$s/server-%1$s.jar".formatted(obj.get("id").getAsString()));
 
-                for (char ch : chars)
-                {
-                    if ("0123456789QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm._-/".indexOf(ch) == -1)
-                    {
-                        IO.println("[Launcher] [WARNING] Version artifact '%s' has illegal characters".formatted(file_path));
-                        break op;
+                try (var stream = zip.getInputStream(entry)) {
+                    jarServer = versionPath.resolve("server.jar");
+
+                    try (var file = new FileOutputStream(jarServer.toFile())) {
+                        stream.transferTo(file);
                     }
                 }
 
-                Path path = LIBRARIES_PATH.resolve(file_path);
+                IO.println("[Launcher] Extracted server version JAR.");
 
-                classpath.add(path.toString());
+                var entries = zip.entries();
 
-                if (Files.exists(path))
-                    continue;
+                saving:
+                    while (entries.hasMoreElements()) {
+                        var el = entries.nextElement();
+                        var name = el.getName();
 
-                Files.createDirectories(path.getParent());
-                Files.write(path, Requests.get(file_url));
+                        if (el.isDirectory())
+                            continue;
+
+                        if (name.contains("libraries")) {
+                            name = name.substring(name.indexOf("libraries") + 9)
+                                       .replace("\\", "/");
+
+                            if (name.contains("//") || name.contains("..")) {
+                                IO.println("[Launcher] Blocked suspicious library: '%s'".formatted(name));
+                                continue;
+                            }
+
+                            var chars = name.toCharArray();
+                            for (char ch : chars) {
+                                if ("0123456789qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM-_./".indexOf(ch) == -1) {
+                                    IO.println("[Launcher] Blocked suspicious library: '%s'".formatted(name));
+                                    continue saving;
+                                }
+                            }
+
+                            if (name.startsWith("/"))
+                                name = name.substring(1);
+
+                            if (name.isEmpty())
+                                continue;
+
+                            try (var stream = zip.getInputStream(el)) {
+                                Path path = Paths.LIBRARIES_PATH.resolve(name);
+
+                                Files.createDirectories(path.getParent());
+
+                                try (var file = new FileOutputStream(path.toFile())) {
+                                    stream.transferTo(file);
+                                }
+
+                                classpathServer.add(path.toString());
+                            }
+                        }
+                    }
             }
-        }
 
-        IO.println("[Launcher] %s version '%s'".formatted("Prepared", id));
-        IO.println("[Launcher] (file path: %s)".formatted("(file:///%s)".formatted(manifestPath.toString().replace("\\", "/"))));
+            Files.delete(jarServerWrapper);
+
+            var reducer = new DuplicateReducer(jarClient, jarServer, versionPath);
+            reducer.reduce();
+
+            jarClient = reducer.clientJAR();
+            jarServer = reducer.serverJAR();
+            jarShared = reducer.sharedJAR();
+
+            IO.println("[Launcher] %s version '%s'".formatted("Prepared", id));
+            IO.println("[Launcher] (file path: %s)".formatted("(file:///%s)".formatted(manifestPath.toString().replace("\\", "/"))));
+
+            classpathPending = true;
+        }
 
         IO.println("----------------------------------\n");
 
         // Finally, use the jargen
-        var jarstr = jar.toString();
+        var transformer = new MultiTransformer();
 
-        var transformedJarN = jarstr.substring(0, jarstr.length() - 4) + "-transformed.jar";
-        var transformedJar = Path.of(transformedJarN);
+        String transformedShared = transformer.append(jarShared);
 
-        classpath.add(transformedJarN);
+        classpathClient.add(transformedShared);
+        classpathServer.add(transformedShared);
 
-        if (!Files.exists(transformedJar)) {
-            IO.println("----------------------------------");
-            IO.println("    Initially transforming JAR    ");
-            IO.println("----------------------------------\n");
+        classpathClient.add(transformer.append(jarClient));
+        classpathServer.add(transformer.append(jarServer));
 
-            var transformer = new Transformer();
-
-            transformer.transform(jarstr);
-            transformer.write(transformedJarN);
-        }
+        if (jargenPending)
+            transformer.transform();
 
         // Save the classpath
-        IO.println("----------------------------------");
-        IO.println("         Saving classpath         ");
-        IO.println("----------------------------------\n");
+        if (classpathPending) {
+            IO.println("----------------------------------");
+            IO.println("         Saving classpath         ");
+            IO.println("----------------------------------\n");
 
-        Files.writeString(versionPath.resolve("classpath.txt"), "-cp " + String.join(";", classpath));
+            Files.writeString(versionPath.resolve("classpath.txt"), "-cp " + String.join(";", classpathClient));
+            Files.writeString(versionPath.resolve("classpath-server.txt"), "-cp " + String.join(";", classpathServer));
+        }
     }
 
-    private static JsonObject downloadVersionsJSON() throws IOException {
-        var versionsBytes = Requests.get("https://piston-meta.mojang.com/mc/game/version_manifest.json");
-        var versionsJSON = new Gson().fromJson(new String(versionsBytes, StandardCharsets.UTF_8), JsonObject.class);
+    private static Path resolve(Path versionPath, String storedName, JsonObject versionJSON, String type)
+            throws IOException
+    {
+        Path jar = versionPath.resolve(storedName);
 
-        Files.createDirectories(BASE_PATH);
-        Files.writeString(BASE_PATH.resolve("version_manifest.json"), new Gson().toJson(versionsJSON), StandardCharsets.UTF_8);
+        if (!Files.isRegularFile(jar)) {
+            IO.println("[Launcher] Downloading " + type);
 
-        return versionsJSON;
+            Files.write(jar, Requests.get(versionJSON.getAsJsonObject("downloads")
+                                     .getAsJsonObject(type)
+                                     .get("url")
+                                     .getAsString()));
+        }
+
+        return jar;
     }
 
     private static JsonObject getVersionsJSON() throws IOException {
-        var versionsBytes = Files.readAllBytes(BASE_PATH.resolve("version_manifest.json"));
+        var versionsBytes = Files.readAllBytes(Paths.BASE_PATH.resolve("version_manifest.json"));
         var versionsJSON = new Gson().fromJson(new String(versionsBytes, StandardCharsets.UTF_8), JsonObject.class);
 
         return versionsJSON;
