@@ -69,4 +69,4 @@ If you want to make a mod, use the [Tedge Mod Template.](https://github.com/Tedg
 > - 34MB per minecraft version
 > - 74.7MB for libraries folder
 > - ~14KB per accesseditor class
-> - ~24 seconds to setup
+> - ~10 seconds to setup
