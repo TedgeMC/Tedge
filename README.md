@@ -5,14 +5,14 @@ If you want to make a mod, use the [Tedge Mod Template.](https://github.com/Tedg
 
 ## 🦈 Why Tedge
 
-<img alt="Static Badge" src="https://img.shields.io/badge/Default%20Modifiers-blue?style=for-the-badge&label=%231&labelColor=%23333&color=%23ff4400">
+<img alt="Static Badge" src="https://img.shields.io/badge/Default%20Modifiers-blue?style=for-the-badge&label=%231&labelColor=%23333&color=%23dd4545">
 
 > Tedge makes all types, fields and methods of Minecraft **public**.<br/>
 > Most of them are made non-final too.
 
 <hr/>
 
-<img alt="Static Badge" src="https://img.shields.io/badge/Access%20Editors-blue?style=for-the-badge&label=%232&labelColor=%23333&color=%23ffaa00">
+<img alt="Static Badge" src="https://img.shields.io/badge/Access%20Editors-blue?style=for-the-badge&label=%232&labelColor=%23333&color=%23dd7745">
 
 > Access Editors allow you to customize way more aspects of elements than accesswideners and accesstransformers.<br/>
 > 1. You can toggle almost all of the keywords;
