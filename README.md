@@ -24,7 +24,7 @@ If you want to make a mod, use the [Tedge Mod Template.](https://github.com/Tedg
 
 <hr/>
 
-<img alt="Static Badge" src="https://img.shields.io/badge/Groovy%20Mixin%20Support-blue?style=for-the-badge&label=%233&labelColor=%23333&color=%23ffaaaa">
+<img alt="Static Badge" src="https://img.shields.io/badge/Groovy%20Mixin%20Support-blue?style=for-the-badge&label=%233&labelColor=%23333&color=%23ddaa77">
 
 > Tedge mods can write mixins in other JVM languages than Java, if there's a TedgeMixin extension for it!<br/>
 > This cannot be done on Fabric and Forge; NeoForge status is unknown.<br/>
