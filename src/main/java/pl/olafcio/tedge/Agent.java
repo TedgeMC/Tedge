@@ -6,11 +6,16 @@ import com.google.gson.JsonObject;
 import org.objectweb.asm.*;
 import org.yaml.snakeyaml.Yaml;
 import pl.olafcio.accesseditors.AccessEditorLoader;
+import pl.olafcio.tedge.internal.GsonUtil;
+import pl.olafcio.tedge.internal.JacksonUtil;
 import pl.olafcio.tedge_mixin.Environment;
 import pl.olafcio.tedge_mixin.MixinLoader;
 import pl.olafcio.tedge_mixin.config.InjectorsConfig;
 import pl.olafcio.tedge_mixin.config.MixinConfig;
 import pl.olafcio.tedge_mixin.config.TedgeConfig;
+import tools.jackson.core.json.JsonFactory;
+import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -86,6 +91,18 @@ final class Agent {
         catch (IOException e) { throw new RuntimeException("Unable to create .tedge/transformed-mods directory", e); }
 
         final var accesseditors = new AccessEditorLoader();
+        final var json5 = JsonFactory.builder()
+                .enable(JsonReadFeature.ALLOW_UNQUOTED_PROPERTY_NAMES)
+                .enable(JsonReadFeature.ALLOW_TRAILING_COMMA)
+                .enable(JsonReadFeature.ALLOW_SINGLE_QUOTES)
+                .enable(JsonReadFeature.ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER)
+                .enable(JsonReadFeature.ALLOW_NON_NUMERIC_NUMBERS)
+                .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS)
+                .enable(JsonReadFeature.ALLOW_LEADING_DECIMAL_POINT_FOR_NUMBERS)
+                .enable(JsonReadFeature.ALLOW_HEXADECIMAL_NUMBERS)
+                .enable(JsonReadFeature.ALLOW_TRAILING_DECIMAL_POINT_FOR_NUMBERS)
+                .enable(JsonReadFeature.ALLOW_LEADING_PLUS_SIGN_FOR_NUMBERS)
+                .build();
 
         try (var mods = Files.list(modsDir)) {
             mods.forEach(mod -> {
@@ -105,13 +122,31 @@ final class Agent {
                     // <----------------------------------->
                     // <--> MIXIN CONFIG IS LOADED HERE <-->
                     // <----------------------------------->
-                    JsonObject mixinconfig;
+                    JsonObject mixinconfig = null;
 
-                    try (var stream = jar.getInputStream(jar.getEntry(yml.get("id") + ".mixins.json"))) {
-                        mixinconfig = new Gson().fromJson(
-                                new String(stream.readAllBytes(), StandardCharsets.UTF_8),
-                                JsonObject.class
-                        );
+                    var mixinsJSON5 = jar.getEntry(yml.get("id") + ".mixins.json5");
+                    if (mixinsJSON5 != null) {
+                        try (var stream = jar.getInputStream(mixinsJSON5)) {
+                            var node = new ObjectMapper().readTree(json5.createParser(
+                                              new String(stream.readAllBytes(), StandardCharsets.UTF_8)
+                                      ));
+
+                            mixinconfig = JacksonUtil.convert(node).getAsJsonObject();
+                        }
+                    }
+
+                    var mixinsJSON = jar.getEntry(yml.get("id") + ".mixins.json");
+                    if (mixinsJSON != null) {
+                        if (mixinsJSON5 != null) {
+                            throw new RuntimeException("You cannot have a .mixins.json and a .mixins.json5 file at once");
+                        }
+
+                        try (var stream = jar.getInputStream(mixinsJSON)) {
+                            mixinconfig = new Gson().fromJson(
+                                    new String(stream.readAllBytes(), StandardCharsets.UTF_8),
+                                    JsonObject.class
+                            );
+                        }
                     }
 
                     // <-------------------------------------->

@@ -1,4 +1,4 @@
-package pl.olafcio.tedge;
+package pl.olafcio.tedge.internal;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -6,7 +6,7 @@ import com.google.gson.JsonElement;
 import java.util.ArrayList;
 import java.util.function.Function;
 
-final class GsonUtil {
+public final class GsonUtil {
     private GsonUtil() {}
 
     public static <T> ArrayList<T> map(JsonArray array, Function<JsonElement, T> mapper) {
