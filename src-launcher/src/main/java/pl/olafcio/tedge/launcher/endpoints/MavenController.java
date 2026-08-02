@@ -10,10 +10,24 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public final class MavenController {
     public static void downloadMavenLibraries(JsonArray versionLibs, ArrayList<String> classpath)
             throws IOException
+    {
+        try (var worker = Executors.newFixedThreadPool(Runtime.getRuntime().freeMemory() > 522074832/2 ? 6 : 2)) {
+            impl(versionLibs, classpath, worker);
+        }
+    }
+
+    private static void impl(
+            JsonArray versionLibs,
+            ArrayList<String> classpath,
+            ExecutorService worker
+    ) throws IOException
     {
         for (var element : versionLibs) {
             if (!element.isJsonObject())
@@ -21,7 +35,7 @@ public final class MavenController {
 
             var lib = (JsonObject) element;
             var downloads = lib.getAsJsonObject("downloads")
-                    .getAsJsonObject("artifact");
+                               .getAsJsonObject("artifact");
 
             var file_path = downloads.get("path").getAsString().replace("../", "");
             var file_url = downloads.get("url").getAsString();
@@ -57,8 +71,17 @@ public final class MavenController {
                     continue;
 
                 Files.createDirectories(path.getParent());
-                Files.write(path, Requests.get(file_url));
+
+                worker.submit(() -> {
+                    try                   { Files.write(path, Requests.get(file_url));                                      }
+                    catch (IOException e) { throw new RuntimeException("Failed to download artifact '%s'".formatted(e), e); }
+                });
             }
         }
+
+        worker.shutdown();
+
+        try                            { worker.awaitTermination(2, TimeUnit.MINUTES);              }
+        catch (InterruptedException e) { throw new RuntimeException("Interrupted library downloading", e); }
     }
 }
