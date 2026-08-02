@@ -43,7 +43,9 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-    compileOnly files(Path.of("${System.getenv("USERPROFILE")}/.gradle/caches/Tedge-ML/${project.minecraft}/client-transformed.jar"))
+    compileOnly files(Path.of("${System.getenv("USERPROFILE")}/.gradle/caches/Tedge-ML/${project.minecraft}/client-only-transformed.jar"))
+    compileOnly files(Path.of("${System.getenv("USERPROFILE")}/.gradle/caches/Tedge-ML/${project.minecraft}/server-only-transformed.jar"))
+    compileOnly files(Path.of("${System.getenv("USERPROFILE")}/.gradle/caches/Tedge-ML/${project.minecraft}/shared-transformed.jar"))
 
     implementation 'com.google.code.gson:gson:2.8.9'
     implementation 'org.jspecify:jspecify:1.0.0'
