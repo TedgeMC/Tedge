@@ -43,7 +43,7 @@ If you want to make a mod, use the [Tedge Mod Template.](https://github.com/Tedg
 
 > Tedge is written with practical usage in mind.<br/>
 > This may seem obvious, but it *isn't*:
-> ###### (these numbers are regarding the development environment for each modloader)
+> ###### (these numbers are regarding the development environment for each modloader)<br/>(these numbers should not be counting genSources)
 > - Fabric needs <b>~181MB</b>:
 >   1. 35MB disk space per global version
 >   2. 74MB disk space per project version
@@ -68,5 +68,5 @@ If you want to make a mod, use the [Tedge Mod Template.](https://github.com/Tedg
 > - 92.7KB for the loader
 > - 34MB per minecraft version
 > - 74.7MB for libraries folder
-> - ~~\~20KB per accesseditor class~~ no gensources yet
+> - ~14KB per accesseditor class
 > - ~24 seconds to setup
