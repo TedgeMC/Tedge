@@ -100,8 +100,10 @@ public class DuplicateReducer {
             writeToClient:
             {
                 if (!entry.getName().contains("META-INF")) {
-                    var entry2 = server.getEntry(entry.getName());
-                    if (entry2 != null) {
+                    if (
+                            entry.getName().startsWith("assets") ||
+                            server.getEntry(entry.getName()) != null
+                    ) {
                         shared.putNextEntry(entry);
 
                         try (var stream = client.getInputStream(entry)) {
