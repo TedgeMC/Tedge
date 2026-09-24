@@ -1,3 +1,11 @@
+pluginManagement {
+    repositories {
+        flatDir {
+            dir "libs-all"
+        }
+    }
+}
+
 rootProject.name = 'TedgeMC'
 
 include 'src-jargen'
