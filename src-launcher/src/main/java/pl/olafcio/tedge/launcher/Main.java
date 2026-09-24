@@ -245,7 +245,7 @@ public class Main {
     }
 
     protected void downloadClientLibraries(JsonArray versionLibs, ArrayList<String> classpathClient) throws IOException {
-        MavenController.downloadMavenLibraries(versionLibs, classpathClient);
+        new MavenController().downloadMavenLibraries(versionLibs, classpathClient);
     }
 
     protected void processServerLibrary(Path path) {}

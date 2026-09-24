@@ -14,8 +14,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-public final class MavenController {
-    public static void downloadMavenLibraries(JsonArray versionLibs, ArrayList<String> classpath)
+public class MavenController {
+    public void downloadMavenLibraries(JsonArray versionLibs, ArrayList<String> classpath)
             throws IOException
     {
         try (var worker = Executors.newFixedThreadPool(Runtime.getRuntime().freeMemory() > 522074832/2 ? 6 : 2)) {
@@ -23,7 +23,9 @@ public final class MavenController {
         }
     }
 
-    private static void impl(
+    protected void onBeforeVersion(JsonObject version, ExecutorService worker) throws IOException {}
+
+    private void impl(
             JsonArray versionLibs,
             ArrayList<String> classpath,
             ExecutorService worker
@@ -34,6 +36,9 @@ public final class MavenController {
                 continue;
 
             var lib = (JsonObject) element;
+
+            this.onBeforeVersion(lib, worker);
+
             var downloads = lib.getAsJsonObject("downloads")
                                .getAsJsonObject("artifact");
 
