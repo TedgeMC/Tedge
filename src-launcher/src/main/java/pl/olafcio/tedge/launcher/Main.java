@@ -1,6 +1,7 @@
 package pl.olafcio.tedge.launcher;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -26,6 +27,10 @@ import java.util.zip.ZipFile;
 @NullMarked
 public class Main {
     public static void main(String[] args) throws IOException {
+        new Main().commandLine(args);
+    }
+
+    protected void commandLine(String[] args) throws IOException {
 //        var dry = args.length >= 1 && args[0].equals("--dry");
 //        if (dry) {
 //            var len = args.length - 1;
@@ -41,11 +46,15 @@ public class Main {
             return;
         }
 
+        start(args[0]);
+    }
+
+    protected void start(String minecraftVersion) throws IOException {
         IO.println("\n----------------------------------");
 
         JsonObject obj;
 
-        var id = args[0];
+        var id = minecraftVersion;
         try {
             obj = findVersion(id, getVersionsJSON());
 
@@ -102,7 +111,7 @@ public class Main {
                 (jarServer = versionPath.resolve("server-only-transformed.jar")).toFile().isFile() &&
                 (jarShared = versionPath.resolve("shared-transformed.jar")).toFile().isFile()
         ) {
-            MavenController.downloadMavenLibraries(versionLibs, classpathClient);
+            downloadClientLibraries(versionLibs, classpathClient);
 
             IO.println("[Launcher] All reduced resources on disk.");
 
@@ -112,14 +121,14 @@ public class Main {
                 (jarServer = versionPath.resolve("server-only.jar")).toFile().isFile() &&
                 (jarShared = versionPath.resolve("shared.jar")).toFile().isFile()
         ) {
-            MavenController.downloadMavenLibraries(versionLibs, classpathClient);
+            downloadClientLibraries(versionLibs, classpathClient);
 
             IO.println("[Launcher] All internet resources on disk.");
         } else {
                 jarClient        = resolve(versionPath, "client.jar",         versionJSON, "client");
             var jarServerWrapper = resolve(versionPath, "server-wrapper.jar", versionJSON, "server");
 
-            MavenController.downloadMavenLibraries(versionLibs, classpathClient);
+            downloadClientLibraries(versionLibs, classpathClient);
 
             IO.println("[Launcher] All internet resources on disk.");
 
@@ -178,6 +187,8 @@ public class Main {
                                     try (var file = new FileOutputStream(path.toFile())) {
                                         stream.transferTo(file);
                                     }
+
+                                    processServerLibrary(path);
                                 }
 
                                 classpathServer.add(path.toString());
@@ -233,8 +244,14 @@ public class Main {
         }
     }
 
-    private static Path resolve(Path versionPath, String storedName, JsonObject versionJSON, String type)
-            throws IOException
+    protected void downloadClientLibraries(JsonArray versionLibs, ArrayList<String> classpathClient) throws IOException {
+        MavenController.downloadMavenLibraries(versionLibs, classpathClient);
+    }
+
+    protected void processServerLibrary(Path path) {}
+
+    protected Path resolve(Path versionPath, String storedName, JsonObject versionJSON, String type)
+       throws IOException
     {
         Path jar = versionPath.resolve(storedName);
 
@@ -250,7 +267,7 @@ public class Main {
         return jar;
     }
 
-    private static JsonObject getVersionsJSON() throws IOException {
+    protected JsonObject getVersionsJSON() throws IOException {
         var versionsBytes = Files.readAllBytes(Paths.BASE_PATH.resolve("version_manifest.json"));
         var versionsJSON = new Gson().fromJson(new String(versionsBytes, StandardCharsets.UTF_8), JsonObject.class);
 
@@ -258,7 +275,7 @@ public class Main {
     }
 
     @Nullable
-    private static JsonObject findVersion(String id, JsonObject master) {
+    protected JsonObject findVersion(String id, JsonObject master) {
         var array = master.getAsJsonArray("versions");
         for (var element : array) {
             if (element.isJsonObject() && element.getAsJsonObject().get("id").getAsString().equals(id)) {
