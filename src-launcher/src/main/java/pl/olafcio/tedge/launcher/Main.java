@@ -298,30 +298,7 @@ public class Main {
             try {
                 var libstext = new String(Requests.get("https://tedgemc.github.io/library_overrides/" + args[0] + ".json"), StandardCharsets.UTF_8);
                 if (libstext.startsWith("[")) {
-                    var input = new Gson().fromJson(libstext, JsonArray.class);
-
-                    final var copy =
-                              versionLibs = new JsonArray(input.size());
-
-                    input.forEach(version -> {
-                        var artifact = new JsonObject();
-
-                        var libName = version.getAsString();
-                        var parts = libName.split(":");
-
-                        var path = parts[0].replace(".", "/") + "/" + parts[1] + "/" + parts[2] + "/" + parts[1] + "-" + parts[2] + ".jar";
-
-                        artifact.addProperty("path", path);
-                        artifact.addProperty("url", "https://maven-central-eu.storage-download.googleapis.com/maven2/" + path);
-
-                        var root = new JsonObject();
-                        var downloads = new JsonObject();
-
-                        root.add("downloads", downloads);
-                        downloads.add("artifact", artifact);
-
-                        copy.add(root);
-                    });
+                    versionLibs = new Gson().fromJson(libstext, JsonArray.class);
                 } else
                     throw new IOException();
             } catch (IOException | RuntimeException ignored) {
