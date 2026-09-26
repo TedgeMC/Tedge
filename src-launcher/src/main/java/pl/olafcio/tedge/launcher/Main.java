@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.zip.ZipFile;
 
 /**
@@ -88,6 +89,7 @@ public class Main {
         }
 
         var versionJSON = new Gson().fromJson(new String(manifest, StandardCharsets.UTF_8), JsonObject.class);
+        processManifest(manifestPath, versionJSON);
         var versionLibs = versionJSON.getAsJsonArray("libraries");
 
         var javaVersion = versionJSON.getAsJsonObject("javaVersion").get("majorVersion").getAsInt();
@@ -244,6 +246,8 @@ public class Main {
         }
     }
 
+    protected void processManifest(Path manifestPath, JsonObject versionJSON) throws IOException {}
+
     protected void downloadClientLibraries(JsonArray versionLibs, ArrayList<String> classpathClient) throws IOException {
         new MavenController().downloadMavenLibraries(versionLibs, classpathClient);
     }
@@ -294,18 +298,35 @@ public class Main {
         }
 
         @Override
-        protected void downloadClientLibraries(JsonArray versionLibs, ArrayList<String> classpathClient) throws IOException {
-            try {
-                var libstext = new String(Requests.get("https://tedgemc.github.io/library_overrides/" + args[0] + ".json"), StandardCharsets.UTF_8);
-                if (libstext.startsWith("[")) {
-                    versionLibs = new Gson().fromJson(libstext, JsonArray.class);
-                } else
-                    throw new IOException();
-            } catch (IOException | RuntimeException ignored) {
-                // No library overrides available
-            }
+        protected void processManifest(Path manifestPath, JsonObject versionJSON) throws IOException {
+            if (!versionJSON.has("updated_libraries")) {
+                String status;
 
-            super.downloadClientLibraries(versionLibs, classpathClient);
+                try {
+                    var libstext = new String(Requests.get("https://tedgemc.github.io/library_overrides/" + args[0] + ".json"), StandardCharsets.UTF_8);
+                    if (libstext.startsWith("[")) {
+                        versionJSON.add("libraries", new Gson().fromJson(libstext, JsonArray.class));
+                    } else
+                        throw new IOException();
+
+                    status = "yes";
+                } catch (IOException | RuntimeException ignored) {
+                    // No library overrides available
+                    status = "not_available";
+                }
+
+                // This field's value is currently unused.
+                versionJSON.addProperty("updated_libraries", status + ";" + Calendar.getInstance().get(Calendar.DAY_OF_MONTH));
+
+                // I've decided not to include the comments as they take much disk space.
+//                versionJSON.addProperty("updated_libraries_comment_1", "This uses the libraries updated every day at 00:00 night by GitHub Actions.");
+//                versionJSON.addProperty("updated_libraries_comment_2", "However, the TedgeMC Launcher doesn't rerequest them everyday - don't worry.");
+//                versionJSON.addProperty("updated_libraries_comment_3", "It currently does not do that at all. However, this will be changed in a future release.");
+
+//                versionJSON.addProperty("updated_libraries_comment_3", "It does that every week, if not in --offline mode.");
+
+                Files.write(manifestPath, new Gson().toJson(versionJSON).getBytes(StandardCharsets.UTF_8));
+            }
         }
     }
 }
