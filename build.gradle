@@ -1,9 +1,12 @@
-import java.nio.file.Files
 import java.nio.file.Path
 
 plugins {
     id 'java'
-    id 'shade' version '1.0'
+    id 'github' version '1.0'
+}
+
+github_plugins {
+    github 'Olafcio1/gradle-shade-plugin' version '1.0'
 }
 
 group = 'pl.olafcio.tedge'
@@ -11,30 +14,6 @@ version = project.version
 
 repositories {
     mavenCentral()
-}
-
-var urlDependencies = new String[]{
-        "https://github.com/TedgeMC/Tedge-Mixin/releases/download/${project.mixin}/TedgeMixin-${project.mixin}.jar",
-        "https://github.com/TedgeMC/AccessEditors/releases/download/${project.accesseditors}/AccessEditors-${project.accesseditors}.jar"
-}
-
-var libsFolder = projectDir.toPath().resolve("libs")
-if (!Files.exists(libsFolder)) {
-    Files.createDirectory(libsFolder)
-
-    for (var raw : urlDependencies) {
-        var url = URI.create(raw).toURL()
-        var conn = url.openConnection()
-
-        conn.setDoInput(true)
-        conn.connect()
-
-        try (var stream = conn.getInputStream()) {
-            var jar = stream.readAllBytes()
-
-            Files.write(libsFolder.resolve(raw.split("/")[-1]), jar)
-        }
-    }
 }
 
 dependencies {
@@ -54,7 +33,8 @@ dependencies {
     implementation 'org.ow2.asm:asm-tree:9.10.1'
     implementation 'org.yaml:snakeyaml:2.2'
 
-    implementation files(rootProject.fileTree("libs"))
+    implementation github("TedgeMC/Tedge-Mixin",   version: project.mixin, file: "TedgeMixin-${project.mixin}.jar")
+    implementation github("TedgeMC/AccessEditors", version: project.accesseditors)
 }
 
 test {
